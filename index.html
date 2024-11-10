@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>Solar Panel Map with Land Cover Chart</title>
+  <style>
+    html, body, #viewDiv {
+      padding: 0;
+      margin: 0;
+      height: 100%;
+      width: 100%;
+    }
+  </style>
+  <link rel="stylesheet" href="https://js.arcgis.com/4.30/esri/themes/light/main.css" />
+  <script src="https://js.arcgis.com/4.30/"></script>
+  <script>
+    require([
+      "esri/Map",
+      "esri/views/MapView",
+      "esri/layers/FeatureLayer",
+      "esri/widgets/Legend",
+      "esri/widgets/LayerList"
+    ], (Map, MapView, FeatureLayer, Legend, LayerList) => {
+
+      const colors = ["#d92b30", "#3cccb4", "#ffdf3c"];
+
+      const commonProperties = {
+        type: "simple-fill",
+        outline: { width: 0 }
+      };
+
+      const year2022 = { ...commonProperties, color: colors[0] };
+      const year2021 = { ...commonProperties, color: colors[1] };
+      const otheryr = { ...commonProperties, color: colors[2] };
+
+      const yrRenderer = {
+        type: "unique-value",
+        legendOptions: { title: "Built Year" },
+        field: "year",
+        defaultSymbol: otheryr,
+        defaultLabel: "Other Year",
+        uniqueValueInfos: [
+          { value: "2021", symbol: year2021, label: "Year 2021" },
+          { value: "2022", symbol: year2022, label: "Year 2022" }
+        ]
+      };
+
+      const map = new Map({ basemap: "dark-gray" });
+      const view = new MapView({
+        container: "viewDiv",
+        map: map,
+        zoom: 11,
+        center: [-71.39, 41.83] 
+      });
+
+      // Popup template with table and chart
+      const template = {
+        title: "<b>Solar Panel Details</b>",
+        content: [
+          {
+            // Displaying fields in table format
+            type: "fields",
+            fieldInfos: [
+              { fieldName: "date_built", label: "Date Built" },
+              { fieldName: "solar_area", label: "Solar Area" },
+              { fieldName: "cleared_ar", label: "Cleared Area" },
+              { fieldName: "Shape__Area", label: "Shape Area" }
+            ]
+          },
+          {
+            type: "media",
+            mediaInfos: [
+              {
+                title: "<b>Land Cover Classes</b>",
+                type: "column-chart",
+                caption: "Distribution of land cover classes surrounding the solar panel",
+                value: {
+                  fields: [
+                    "forest",
+                    "wetland",
+                    "developed",
+                    "water",
+                    "grassland",
+                    "agricultur",
+                    "snow",
+                    "barren"
+                  ],
+                  normalizeField: null
+                }
+              }
+            ]
+          }
+        ]
+      };
+
+      const layerList = new LayerList({ view: view });
+      const baseLayer = new FeatureLayer({
+        portalItem: { id: "a171604da3dc42b0befc156d8b23b9d5" },
+        popupTemplate: template,
+        renderer: yrRenderer
+      });
+
+      map.add(baseLayer);
+
+      view.when(() => {
+        const legend = new Legend({
+          view: view,
+          layerInfos: [{ layer: baseLayer, title: "Solar Panel" }]
+        });
+        view.ui.add(legend, "bottom-right");
+        view.ui.add(layerList, "top-right");
+      });
+    });
+  </script>
+</head>
+<body>
+  <div id="viewDiv"></div>
+</body>
+</html>
